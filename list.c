@@ -1,18 +1,8 @@
 #include "list.h"
+#include "common.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define __TYPE_CHECK(a, b) \
-    if (b && a != b)       \
-        return;
-
-#define __DELETE_NODE(n) \
-    do {                 \
-        n->next = NULL;  \
-        free(n->val);    \
-        free(n);         \
-    } while (0)
 
 typedef struct list_node list_node_t;
 
