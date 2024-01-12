@@ -51,6 +51,9 @@ int queue_dequeue(queue_t* queue, void* rmval)
 {
     queue_node_t* __curptr = queue->head;
 
+    if (!__curptr)
+        return 1;
+
     queue->head = __curptr->next;
     if (rmval)
         memcpy(rmval, __curptr->val, queue->size);
