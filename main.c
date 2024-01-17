@@ -4,8 +4,8 @@
 int main(void)
 {
     vector_t* v = vector_create(sizeof(int), NULL);
-
     int n;
+
     n = 5;
     vector_push_back(v, TEMPLATE_VAL(n));
 
