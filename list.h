@@ -1,10 +1,8 @@
-#ifndef __TEMPLATE_LIST_INCLUDED_H__
-#define __TEMPLATE_LIST_INCLUDED_H__
+#ifndef __C_TEMPLATE_LIB_LIST_INCLUDED_H__
+#define __C_TEMPLATE_LIB_LIST_INCLUDED_H__
 
+#include "common.h"
 #include <stdio.h>
-
-#define TEMPLATE_VAL(v) \
-    &v, sizeof(v)
 
 typedef struct list list_t;
 
@@ -16,4 +14,4 @@ void list_print(list_t* list, void (*print_fn)(const void* val));
 size_t list_size(list_t* list);
 void list_delete(list_t* list);
 
-#endif // __TEMPLATE_LIST_INCLUDED_H__
+#endif // __C_TEMPLATE_LIB_LIST_INCLUDED_H__

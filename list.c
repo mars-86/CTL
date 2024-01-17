@@ -1,10 +1,15 @@
 #include "list.h"
-#include "common.h"
+#include "common_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 typedef struct list_node list_node_t;
+typedef struct list_options list_options_t;
+
+struct list_options {
+    ctl_tops_t common;
+};
 
 struct list_node {
     void* val;
@@ -16,6 +21,7 @@ struct list {
     list_node_t* end;
     size_t length;
     size_t size;
+    list_options_t opts;
 };
 
 list_t* list_create(size_t size)
@@ -97,6 +103,11 @@ void list_print(list_t* list, void (*print_fn)(const void* val))
 }
 
 size_t list_size(list_t* list)
+{
+    return list->size;
+}
+
+size_t list_length(list_t* list)
 {
     return list->length;
 }

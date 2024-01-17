@@ -1,10 +1,8 @@
-#ifndef __TEMPLATE_STACK_INCLUDED_H__
-#define __TEMPLATE_STACK_INCLUDED_H__
+#ifndef __C_TEMPLATE_LIB_STACK_INCLUDED_H__
+#define __C_TEMPLATE_LIB_STACK_INCLUDED_H__
 
+#include "common.h"
 #include <stdio.h>
-
-#define TEMPLATE_VAL(v) \
-    &v, sizeof(v)
 
 typedef struct stack stack_t;
 
@@ -16,4 +14,4 @@ void stack_print(stack_t* stack, void (*print_fn)(const void* val));
 size_t stack_size(stack_t* stack);
 void stack_delete(stack_t* stack);
 
-#endif // __TEMPLATE_STACK_INCLUDED_H__
+#endif // __C_TEMPLATE_LIB_STACK_INCLUDED_H__

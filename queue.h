@@ -1,10 +1,8 @@
-#ifndef __TEMPLATE_QUEUE_INCLUDED_H__
-#define __TEMPLATE_QUEUE_INCLUDED_H__
+#ifndef __C_TEMPLATE_LIB_QUEUE_INCLUDED_H__
+#define __C_TEMPLATE_LIB_QUEUE_INCLUDED_H__
 
+#include "common.h"
 #include <stdio.h>
-
-#define TEMPLATE_VAL(v) \
-    &v, sizeof(v)
 
 typedef struct queue queue_t;
 
@@ -16,4 +14,4 @@ void queue_print(queue_t* queue, void (*print_fn)(const void* val));
 size_t queue_size(queue_t* queue);
 void queue_delete(queue_t* queue);
 
-#endif // __TEMPLATE_QUEUE_INCLUDED_H__
+#endif // __C_TEMPLATE_LIB_QUEUE_INCLUDED_H__

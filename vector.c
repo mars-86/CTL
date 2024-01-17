@@ -1,5 +1,5 @@
 #include "vector.h"
-#include "common.h"
+#include "common_internal.h"
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,7 +11,7 @@
 typedef struct vector_options vector_options_t;
 
 struct vector_options {
-    void* (*allocator)(size_t size);
+    ctl_tops_t common;
     size_t chunck_size;
 };
 
@@ -27,7 +27,7 @@ struct vector {
 
 static void __vector_set_opts(vector_t* vector, vector_options_t* options)
 {
-    vector->opts.allocator = options && options->allocator ? options->allocator : malloc;
+    vector->opts.common.allocator = options && options->common.allocator ? options->common.allocator : malloc;
     vector->opts.chunck_size = options && options->chunck_size ? options->chunck_size : __DEFAULT_SIZE;
 }
 
@@ -66,7 +66,7 @@ vector_t* vector_create(size_t size, vector_options_t* options)
 
     __v->mem = NULL;
     __v->chunks = 0;
-    __v->mem = (ctl_mem_t)__v->opts.allocator(__MEMALLOC(__v, size));
+    __v->mem = (ctl_mem_t)__v->opts.common.allocator(__MEMALLOC(__v, size));
 
     __v->begin = __v->end = __v->mem;
     __v->length = 0;

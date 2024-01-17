@@ -1,9 +1,14 @@
 #include "queue.h"
-#include "common.h"
+#include "common_internal.h"
 #include <stdlib.h>
 #include <string.h>
 
 typedef struct queue_node queue_node_t;
+typedef struct queue_options queue_options_t;
+
+struct queue_options {
+    ctl_tops_t common;
+};
 
 struct queue_node {
     void* val;
@@ -15,6 +20,7 @@ struct queue {
     queue_node_t* tail;
     size_t length;
     size_t size;
+    queue_options_t opts;
 };
 
 queue_t* queue_create(size_t size)
@@ -86,6 +92,11 @@ void queue_print(queue_t* queue, void (*print_fn)(const void* val))
 }
 
 size_t queue_size(queue_t* queue)
+{
+    return queue->size;
+}
+
+size_t queue_length(queue_t* queue)
 {
     return queue->length;
 }

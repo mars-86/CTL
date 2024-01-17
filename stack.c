@@ -1,9 +1,14 @@
 #include "stack.h"
-#include "common.h"
+#include "common_internal.h"
 #include <stdlib.h>
 #include <string.h>
 
 typedef struct stack_node stack_node_t;
+typedef struct stack_options stack_options_t;
+
+struct stack_options {
+    ctl_tops_t common;
+};
 
 struct stack_node {
     void* val;
@@ -15,6 +20,7 @@ struct stack {
     stack_node_t* bottom;
     size_t length;
     size_t size;
+    stack_options_t opts;
 };
 
 stack_t* stack_create(size_t size)
@@ -86,6 +92,11 @@ void stack_print(stack_t* stack, void (*print_fn)(const void* val))
 }
 
 size_t stack_size(stack_t* stack)
+{
+    return stack->size;
+}
+
+size_t vector_length(stack_t* stack)
 {
     return stack->length;
 }
