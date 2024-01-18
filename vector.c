@@ -64,9 +64,11 @@ vector_t* vector_create(size_t size, vector_options_t* options)
     vector_t* __v = (vector_t*)malloc(sizeof(vector_t));
     __vector_set_opts(__v, options);
 
+    ctl_allocator_t alloc = __v->opts.common.allocator;
+
     __v->mem = NULL;
     __v->chunks = 0;
-    __v->mem = (ctl_mem_t)__v->opts.common.allocator(__MEMALLOC(__v, size));
+    __v->mem = (ctl_mem_t)alloc(__MEMALLOC(__v, size));
 
     __v->begin = __v->end = __v->mem;
     __v->length = 0;

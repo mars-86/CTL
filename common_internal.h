@@ -15,10 +15,12 @@
     } while (0)
 
 typedef void* ctl_mem_t;
+typedef void* (*ctl_allocator_t)(size_t);
 typedef struct template_options ctl_tops_t;
 
 struct template_options {
-    void* (*allocator)(size_t size);
+    ctl_allocator_t allocator;
+    int data_persistance;
 };
 
 #endif // __CTL_COMMON_INTERNAL_INCLUDED_H__

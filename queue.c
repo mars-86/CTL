@@ -4,7 +4,6 @@
 #include <string.h>
 
 typedef struct queue_node queue_node_t;
-typedef struct queue_options queue_options_t;
 
 struct queue_options {
     ctl_tops_t common;
@@ -23,9 +22,15 @@ struct queue {
     queue_options_t opts;
 };
 
-queue_t* queue_create(size_t size)
+static void __queue_set_opts(queue_t* queue, queue_options_t* options)
+{
+    queue->opts.common.allocator = options && options->common.allocator ? options->common.allocator : malloc;
+}
+
+queue_t* queue_create(size_t size, queue_options_t* options)
 {
     queue_t* __q = (queue_t*)malloc(sizeof(queue_t));
+    __queue_set_opts(__q, options);
 
     __q->head = __q->tail = NULL;
     __q->length = 0;
@@ -36,9 +41,11 @@ queue_t* queue_create(size_t size)
 
 void queue_enqueue(queue_t* queue, void* val, size_t size)
 {
-    __TYPE_CHECK(queue->size, size)
-    queue_node_t* __node = (queue_node_t*)malloc(sizeof(queue_node_t));
-    __node->val = malloc(queue->size);
+    __TYPE_CHECK(queue->size, size);
+    ctl_allocator_t alloc = queue->opts.common.allocator;
+
+    queue_node_t* __node = (queue_node_t*)alloc(sizeof(queue_node_t));
+    __node->val = alloc(queue->size);
 
     memcpy(__node->val, val, queue->size);
     __node->next = NULL;

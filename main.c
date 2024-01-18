@@ -26,6 +26,8 @@ int main(void)
     for (it = vector_begin(v); it != vector_end(v); MOVE_IT_FWD(v, it))
         printf("%d\n", CTL_DEREF_DATA(it, int));
 
+    printf("length: %lu\n", vector_length(v));
+
     vector_delete(v);
 
     return 0;

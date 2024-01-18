@@ -5,7 +5,6 @@
 #include <string.h>
 
 typedef struct list_node list_node_t;
-typedef struct list_options list_options_t;
 
 struct list_options {
     ctl_tops_t common;
@@ -24,9 +23,15 @@ struct list {
     list_options_t opts;
 };
 
-list_t* list_create(size_t size)
+static void __list_set_opts(list_t* list, list_options_t* options)
+{
+    list->opts.common.allocator = options && options->common.allocator ? options->common.allocator : malloc;
+}
+
+list_t* list_create(size_t size, list_options_t* options)
 {
     list_t* __l = (list_t*)malloc(sizeof(list_t));
+    __list_set_opts(__l, options);
 
     __l->begin = __l->end = NULL;
     __l->length = 0;
@@ -37,9 +42,11 @@ list_t* list_create(size_t size)
 
 void list_insert(list_t* list, void* val, size_t size)
 {
-    __TYPE_CHECK(list->size, size)
-    list_node_t* __node = (list_node_t*)malloc(sizeof(list_node_t));
-    __node->val = malloc(list->size);
+    __TYPE_CHECK(list->size, size);
+    ctl_allocator_t alloc = list->opts.common.allocator;
+
+    list_node_t* __node = (list_node_t*)alloc(sizeof(list_node_t));
+    __node->val = alloc(list->size);
 
     memcpy(__node->val, val, list->size);
     __node->next = NULL;
