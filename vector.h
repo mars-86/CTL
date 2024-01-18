@@ -1,19 +1,14 @@
-#ifndef __CTL_VECTOR_INCLUDED_H__
-#define __CTL_VECTOR_INCLUDED_H__
+#ifndef __C_TEMPLATE_LIB_VECTOR_INCLUDED_H__
+#define __C_TEMPLATE_LIB_VECTOR_INCLUDED_H__
 
+#include "common.h"
 #include <stdio.h>
-
-#define TEMPLATE_VAL(v) \
-    &v, sizeof(v)
 
 #define MOVE_IT_FWD(v, i) \
     (i += vector_size(v))
 
 #define MOVE_IT_BWD(v, i) \
     (i -= vector_size(v))
-
-#define TEMPLATE_DEREF_DATA(data, type) \
-    (*(type*)data)
 
 typedef struct vector vector_t;
 typedef struct vector_options vector_options_t;
@@ -30,4 +25,4 @@ size_t vector_size(vector_t* vector);
 size_t vector_length(vector_t* vector);
 void vector_delete(vector_t* vector);
 
-#endif // __CTL_VECTOR_INCLUDED_H__
+#endif // __C_TEMPLATE_LIB_VECTOR_INCLUDED_H__
