@@ -28,6 +28,8 @@
 
 typedef void* ctl_val_t;
 typedef void* (*ctl_allocator_t)(size_t);
+typedef int (*ctl_remove_cb_t)(const void* val, const void* rmval);
+typedef int (*ctl_delete_cb_t)(const void* val);
 typedef struct template_options ctl_tops_t;
 
 struct template_options {

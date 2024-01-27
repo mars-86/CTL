@@ -1,4 +1,5 @@
 #include "list.h"
+#include "common.h"
 #include "common_internal.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,13 +62,13 @@ void list_insert(list_t* list, void* val, size_t size)
     list->length++;
 }
 
-int list_remove(list_t* list, const void* val, void* rmval, int (*remove_fn)(const void* lsval, const void* rmval))
+int list_remove(list_t* list, const void* val, void* rmval, ctl_remove_cb_t cb)
 {
     list_node_t *__curptr = list->begin, *__prvptr = NULL;
     int __rmval = 0;
 
     while (__curptr != NULL) {
-        __rmval = remove_fn(__curptr->val, val);
+        __rmval = cb(__curptr->val, val);
         if (__rmval) {
             if (!__prvptr) {
                 list->begin = __curptr->next;
@@ -87,13 +88,15 @@ int list_remove(list_t* list, const void* val, void* rmval, int (*remove_fn)(con
     return 0;
 }
 
-void list_clear(list_t* list)
+void list_clear(list_t* list, ctl_delete_cb_t cb)
 {
     list_node_t *__curptr, *__nxtptr;
     __curptr = list->begin;
 
     while (__curptr != NULL) {
         __nxtptr = __curptr->next;
+        if (cb)
+            cb(__curptr->val);
         __DELETE_NODE(__curptr);
         __curptr = __nxtptr;
     }
@@ -119,8 +122,8 @@ size_t list_length(list_t* list)
     return list->length;
 }
 
-void list_delete(list_t* list)
+void list_delete(list_t* list, ctl_delete_cb_t cb)
 {
-    list_clear(list);
+    list_clear(list, cb);
     free((list_t*)list);
 }
