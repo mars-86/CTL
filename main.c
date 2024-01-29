@@ -15,7 +15,7 @@ void print(const void* v)
 void test_list(void)
 {
     printf("LIST\n");
-    list_t* l = list_create(sizeof(int), NULL);
+    list_t* l = list_create(CTL_VAL_INT, NULL);
     int n;
 
     n = 0;
@@ -40,7 +40,7 @@ void test_list(void)
 void test_stack(void)
 {
     printf("STACK\n");
-    stack_t* s = stack_create(sizeof(int), NULL);
+    stack_t* s = stack_create(CTL_VAL_INT, NULL);
     int n;
 
     n = 55;
@@ -65,7 +65,7 @@ void test_stack(void)
 void test_queue(void)
 {
     printf("QUEUE\n");
-    queue_t* q = queue_create(sizeof(int), NULL);
+    queue_t* q = queue_create(CTL_VAL_INT, NULL);
     int n;
 
     n = 54;
@@ -90,7 +90,7 @@ void test_queue(void)
 void test_vector(void)
 {
     printf("VECTOR\n");
-    vector_t* v = vector_create(sizeof(int), NULL);
+    vector_t* v = vector_create(CTL_VAL_INT, NULL);
     int n;
 
     n = 5;
