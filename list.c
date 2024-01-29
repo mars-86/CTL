@@ -27,6 +27,7 @@ struct list {
 static void __list_set_opts(list_t* list, list_options_t* options)
 {
     list->opts.common.allocator = options && options->common.allocator ? options->common.allocator : malloc;
+    list->opts.common.delete_cb = options && options->common.delete_cb ? options->common.delete_cb : NULL;
 }
 
 list_t* list_create(size_t size, list_options_t* options)
@@ -65,6 +66,7 @@ void list_insert(list_t* list, void* val, size_t size)
 int list_remove(list_t* list, const void* val, void* rmval, ctl_remove_cb_t cb)
 {
     list_node_t *__curptr = list->begin, *__prvptr = NULL;
+    ctl_delete_cb_t __dcb = list->opts.common.delete_cb;
     int __rmval = 0;
 
     while (__curptr != NULL) {
@@ -77,7 +79,7 @@ int list_remove(list_t* list, const void* val, void* rmval, ctl_remove_cb_t cb)
             }
             if (rmval)
                 memcpy(rmval, __curptr->val, list->size);
-            __DELETE_NODE(__curptr);
+            __DELETE_NODE(__curptr, __dcb);
             list->length--;
             return 1;
         }
@@ -88,42 +90,41 @@ int list_remove(list_t* list, const void* val, void* rmval, ctl_remove_cb_t cb)
     return 0;
 }
 
-void list_clear(list_t* list, ctl_delete_cb_t cb)
+void list_clear(list_t* list)
 {
     list_node_t *__curptr, *__nxtptr;
+    ctl_delete_cb_t __dcb = list->opts.common.delete_cb;
     __curptr = list->begin;
 
     while (__curptr != NULL) {
         __nxtptr = __curptr->next;
-        if (cb)
-            cb(__curptr->val);
-        __DELETE_NODE(__curptr);
+        __DELETE_NODE(__curptr, __dcb);
         __curptr = __nxtptr;
     }
 }
 
-void list_print(list_t* list, void (*print_fn)(const void* val))
+void list_for_each(list_t* list, ctl_handle_cb_t cb)
 {
     list_node_t* __curptr = list->begin;
 
     while (__curptr != NULL) {
-        print_fn(__curptr->val);
+        cb(__curptr->val);
         __curptr = __curptr->next;
     }
 }
 
-size_t list_size(list_t* list)
+size_t list_size(const list_t* list)
 {
     return list->size;
 }
 
-size_t list_length(list_t* list)
+size_t list_length(const list_t* list)
 {
     return list->length;
 }
 
-void list_delete(list_t* list, ctl_delete_cb_t cb)
+void list_delete(list_t* list)
 {
-    list_clear(list, cb);
+    list_clear(list);
     free((list_t*)list);
 }
