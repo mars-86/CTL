@@ -19,13 +19,13 @@
     if (a && b && a != b)  \
         return;
 
-#define __DELETE_NODE(node, delete_cb) \
-    do {                               \
-        if (delete_cb)                 \
-            delete_cb(node->val);      \
-        node->next = NULL;             \
-        free(node->val);               \
-        free(node);                    \
+#define __DELETE_NODE(node, tsize, tflags, delete_cb) \
+    do {                                              \
+        if (delete_cb)                                \
+            delete_cb(node->val);                     \
+        node->next = NULL;                            \
+        __ctl_free_val(node->val, tsize, tflags);     \
+        free(node);                                   \
     } while (0)
 
 #define __ALLOC_DATA(allocator, tsz, usz) \

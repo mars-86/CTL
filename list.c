@@ -46,11 +46,9 @@ void list_insert(list_t* list, void* val, size_t size)
 {
     __TYPE_CHECK(list->size, size);
     ctl_allocator_t alloc = list->opts.common.allocator;
-
     list_node_t* __node = (list_node_t*)alloc(sizeof(list_node_t));
-    __node->val = alloc(list->size);
 
-    memcpy(__node->val, val, list->size);
+    __ctl_assign_val(&__node->val, &val, alloc, list->size, size);
     __node->next = NULL;
 
     if (!list->begin) {
@@ -79,7 +77,7 @@ int list_remove(list_t* list, const void* val, void* rmval, ctl_remove_cb_t cb)
             }
             if (rmval)
                 memcpy(rmval, __curptr->val, list->size);
-            __DELETE_NODE(__curptr, __dcb);
+            __DELETE_NODE(__curptr, list->size, list->opts.common.flags, __dcb);
             list->length--;
             return 1;
         }
@@ -98,7 +96,7 @@ void list_clear(list_t* list)
 
     while (__curptr != NULL) {
         __nxtptr = __curptr->next;
-        __DELETE_NODE(__curptr, __dcb);
+        __DELETE_NODE(__curptr, list->size, list->opts.common.flags, __dcb);
         __curptr = __nxtptr;
     }
 }
