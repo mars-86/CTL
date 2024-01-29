@@ -11,7 +11,7 @@ queue_t* queue_create(size_t size, queue_options_t* options);
 void queue_enqueue(queue_t* queue, void* val, size_t size);
 int queue_dequeue(queue_t* queue, void* rmval);
 void queue_clear(queue_t* queue);
-void queue_print(queue_t* queue, void (*print_fn)(const void* val));
+void queue_for_each(queue_t* queue, ctl_handle_cb_t cb);
 size_t queue_size(queue_t* queue);
 size_t queue_length(queue_t* queue);
 void queue_delete(queue_t* queue);

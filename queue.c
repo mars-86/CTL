@@ -1,4 +1,5 @@
 #include "queue.h"
+#include "common.h"
 #include "common_internal.h"
 #include <stdlib.h>
 #include <string.h>
@@ -25,6 +26,7 @@ struct queue {
 static void __queue_set_opts(queue_t* queue, queue_options_t* options)
 {
     queue->opts.common.allocator = options && options->common.allocator ? options->common.allocator : malloc;
+    queue->opts.common.delete_cb = options && options->common.delete_cb ? options->common.delete_cb : NULL;
 }
 
 queue_t* queue_create(size_t size, queue_options_t* options)
@@ -43,12 +45,11 @@ void queue_enqueue(queue_t* queue, void* val, size_t size)
 {
     __TYPE_CHECK(queue->size, size);
     ctl_allocator_t alloc = queue->opts.common.allocator;
-
     queue_node_t* __node = (queue_node_t*)alloc(sizeof(queue_node_t));
-    __node->val = alloc(queue->size);
 
-    memcpy(__node->val, val, queue->size);
+    __node->val = NULL;
     __node->next = NULL;
+    __ctl_assign_val(&__node->val, &val, alloc, queue->size, size);
 
     if (!queue->head) {
         queue->head = __node;
@@ -63,6 +64,7 @@ void queue_enqueue(queue_t* queue, void* val, size_t size)
 int queue_dequeue(queue_t* queue, void* rmval)
 {
     queue_node_t* __curptr = queue->head;
+    ctl_delete_cb_t __dcb = queue->opts.common.delete_cb;
 
     if (!__curptr)
         return 1;
@@ -70,7 +72,7 @@ int queue_dequeue(queue_t* queue, void* rmval)
     queue->head = __curptr->next;
     if (rmval)
         memcpy(rmval, __curptr->val, queue->size);
-    __DELETE_NODE(__curptr);
+    __DELETE_NODE(__curptr, queue->size, queue->opts.common.flags, __dcb);
     queue->length--;
 
     return 0;
@@ -79,21 +81,22 @@ int queue_dequeue(queue_t* queue, void* rmval)
 void queue_clear(queue_t* queue)
 {
     queue_node_t *__curptr, *__nxtptr;
+    ctl_delete_cb_t __dcb = queue->opts.common.delete_cb;
     __curptr = queue->head;
 
     while (__curptr != NULL) {
         __nxtptr = __curptr->next;
-        __DELETE_NODE(__curptr);
+        __DELETE_NODE(__curptr, queue->size, queue->opts.common.flags, __dcb);
         __curptr = __nxtptr;
     }
 }
 
-void queue_print(queue_t* queue, void (*print_fn)(const void* val))
+void queue_for_each(queue_t* queue, ctl_handle_cb_t cb)
 {
     queue_node_t* __curptr = queue->head;
 
     while (__curptr != NULL) {
-        print_fn(__curptr->val);
+        cb(__curptr->val);
         __curptr = __curptr->next;
     }
 }

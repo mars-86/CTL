@@ -48,8 +48,9 @@ void list_insert(list_t* list, void* val, size_t size)
     ctl_allocator_t alloc = list->opts.common.allocator;
     list_node_t* __node = (list_node_t*)alloc(sizeof(list_node_t));
 
-    __ctl_assign_val(&__node->val, &val, alloc, list->size, size);
+    __node->val = NULL;
     __node->next = NULL;
+    __ctl_assign_val(&__node->val, &val, alloc, list->size, size);
 
     if (!list->begin) {
         list->begin = __node;
