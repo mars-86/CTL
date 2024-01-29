@@ -19,12 +19,21 @@
     if (a && b && a != b)  \
         return;
 
-#define __DELETE_NODE(n) \
-    do {                 \
-        n->next = NULL;  \
-        free(n->val);    \
-        free(n);         \
+#define __DELETE_NODE(node, tsize, tflags, delete_cb) \
+    do {                                              \
+        if (delete_cb)                                \
+            delete_cb(node->val);                     \
+        node->next = NULL;                            \
+        __ctl_free_val(node->val, tsize, tflags);     \
+        free(node);                                   \
     } while (0)
+
+#define __TEMPLATE_FLAGS(t) \
+    (t->opts.common.flags)
+
+#define __TEMPLATE_SET_OPTS(t, opts)                                                             \
+    t->opts.common.allocator = opts && opts->common.allocator ? opts->common.allocator : malloc; \
+    t->opts.common.delete_cb = opts && opts->common.delete_cb ? opts->common.delete_cb : NULL;
 
 #define __ALLOC_DATA(allocator, tsz, usz) \
     tsz ? allocator(tsz) : allocator(usz)

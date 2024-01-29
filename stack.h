@@ -11,7 +11,7 @@ stack_t* stack_create(size_t size, stack_options_t* options);
 void stack_push(stack_t* stack, void* val, size_t size);
 int stack_pop(stack_t* stack, void* rmval);
 void stack_clear(stack_t* stack);
-void stack_print(stack_t* stack, void (*print_fn)(const void* val));
+void stack_for_each(stack_t* stack, ctl_handle_cb_t cb);
 size_t stack_size(stack_t* stack);
 size_t stack_length(stack_t* stack);
 void stack_delete(stack_t* stack);
