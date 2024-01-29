@@ -78,7 +78,7 @@ int list_remove(list_t* list, const void* val, void* rmval, ctl_remove_cb_t cb)
             }
             if (rmval)
                 memcpy(rmval, __curptr->val, list->size);
-            __DELETE_NODE(__curptr, list->size, list->opts.common.flags, __dcb);
+            __DELETE_NODE(__curptr, list->size, __TEMPLATE_FLAGS(list), __dcb);
             list->length--;
             return 1;
         }
@@ -97,7 +97,7 @@ void list_clear(list_t* list)
 
     while (__curptr != NULL) {
         __nxtptr = __curptr->next;
-        __DELETE_NODE(__curptr, list->size, list->opts.common.flags, __dcb);
+        __DELETE_NODE(__curptr, list->size, __TEMPLATE_FLAGS(list), __dcb);
         __curptr = __nxtptr;
     }
 }

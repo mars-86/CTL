@@ -28,6 +28,13 @@
         free(node);                                   \
     } while (0)
 
+#define __TEMPLATE_FLAGS(t) \
+    (t->opts.common.flags)
+
+#define __TEMPLATE_SET_OPTS(t, opts)                                                             \
+    t->opts.common.allocator = opts && opts->common.allocator ? opts->common.allocator : malloc; \
+    t->opts.common.delete_cb = opts && opts->common.delete_cb ? opts->common.delete_cb : NULL;
+
 #define __ALLOC_DATA(allocator, tsz, usz) \
     tsz ? allocator(tsz) : allocator(usz)
 

@@ -2,6 +2,7 @@
 #include "list.h"
 #include "pair.h"
 #include "queue.h"
+#include "stack.h"
 #include "vector.h"
 #include <stdio.h>
 
@@ -34,6 +35,31 @@ void test_list(void)
 
     list_for_each(l, print);
     list_delete(l);
+}
+
+void test_stack(void)
+{
+    printf("STACK\n");
+    stack_t* s = stack_create(sizeof(int), NULL);
+    int n;
+
+    n = 55;
+    stack_push(s, CTL_CREATE_VAL(n));
+
+    n = 92;
+    stack_push(s, CTL_CREATE_VAL(n));
+
+    n = 11;
+    stack_push(s, CTL_CREATE_VAL(n));
+
+    n = 94;
+    stack_push(s, CTL_CREATE_VAL(n));
+
+    n = 75;
+    stack_push(s, CTL_CREATE_VAL(n));
+
+    stack_for_each(s, print);
+    stack_delete(s);
 }
 
 void test_queue(void)
@@ -119,14 +145,9 @@ int main(void)
 {
     test_list();
     test_queue();
+    test_stack();
     test_vector();
-    pair_t* p = NULL;
     test_pair();
-
-    // printf("%s\n", (char*)pair_first(p));
-    // printf("%d\n", CTL_DEREF_DATA(pair_second(p), int));
-
-    // pair_delete(p);
 
     return 0;
 }
