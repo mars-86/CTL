@@ -1,4 +1,5 @@
 #include "vector.h"
+#include "common.h"
 #include "common_internal.h"
 #include <stddef.h>
 #include <stdio.h>
@@ -31,6 +32,7 @@ static void __vector_set_opts(vector_t* vector, vector_options_t* options)
     vector->opts.chunck_size = options && options->chunck_size ? options->chunck_size : __DEFAULT_SIZE;
 }
 
+/*
 static int __resize_vector(vector_t* vector)
 {
     ctl_mem_t __newmem = (ctl_mem_t)malloc(__MEMALLOC(vector, vector->size));
@@ -48,6 +50,7 @@ static int __resize_vector(vector_t* vector)
 
     return 0;
 }
+*/
 
 iterator_t vector_begin(vector_t* vector)
 {
