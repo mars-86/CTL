@@ -41,26 +41,6 @@ static void vector_set_opts(vector_t *vector,
 	}
 }
 
-/*
-static int __resize_vector(vector_t* vector)
-{
-    ctl_mem_t __newmem = (ctl_mem_t)malloc(__MEMALLOC(vector, vector->size));
-
-    if (!__newmem)
-        return 1;
-
-    memcpy(__newmem, vector->mem, vector->opts.chunck_size * vector->chunks *
-sizeof(vector->size)); vector->begin = __newmem; vector->end = (__newmem +
-vector->opts.chunck_size * vector->chunks * sizeof(vector->size));
-    free(vector->mem);
-    vector->mem = __newmem;
-
-    vector->chunks++;
-
-    return 0;
-}
-*/
-
 vector_t *vector_alloc(size_t elem_size, const struct vector_options *options)
 {
 	vector_t *v = malloc(sizeof(vector_t));
@@ -99,7 +79,7 @@ size_t vector_capacity(const vector_t *v)
 void vector_push_back(vector_t *v, void *val, size_t size)
 {
 	if (v->length == v->capacity) {
-		ctl_mem_t *newmem = NULL;
+		ctl_mem_t newmem = NULL;
 		size_t new_cap = 0;
 
 		if (v->resized) {
@@ -161,11 +141,31 @@ size_t vector_size(const vector_t *vector)
 
 void vector_reserve(vector_t *v, size_t size)
 {
+	ctl_mem_t newmem = NULL;
+	size_t new_size;
+
+	if (v->capacity < v->length + size) {
+		new_size = v->length + size;
+
+		newmem = malloc(new_size * v->elem_size);
+		if (!newmem)
+			return;
+
+		memcpy(newmem, v->mem, v->elem_size * v->length);
+
+		v->begin = v->end = newmem;
+		v->end += v->elem_size * v->length;
+		v->capacity = new_size;
+		v->resized = 1;
+
+		free(v->mem);
+		v->mem = newmem;
+	}
 }
 
 void vector_resize(vector_t *v, size_t size, void *val)
 {
-	ctl_mem_t *newmem = NULL;
+	ctl_mem_t newmem = NULL;
 	size_t new_size;
 
 	if (v->capacity < size) {
@@ -210,7 +210,7 @@ void vector_resize(vector_t *v, size_t size, void *val)
 void vector_shrink_to_fit(vector_t *v)
 {
 	if (v->capacity > v->length) {
-		ctl_mem_t *newmem = NULL;
+		ctl_mem_t newmem = NULL;
 
 		newmem = v->opts.common.allocator(v->elem_size * v->length);
 		if (!newmem)
