@@ -20,7 +20,9 @@ struct vector {
 	size_t capacity;
 	size_t prev_cap;
 	struct vector_options opts;
-	int fixed;
+
+	/* flag to indicate if the vector is manually resized */
+	int resized;
 };
 
 static void vector_set_opts(vector_t *vector,
@@ -74,6 +76,7 @@ vector_t *vector_alloc(size_t elem_size, const struct vector_options *options)
 	v->begin = v->end = v->mem;
 	v->length = 0;
 	v->elem_size = elem_size;
+	v->resized = 0;
 
 	return v;
 }
@@ -97,9 +100,14 @@ void vector_push_back(vector_t *v, void *val, size_t size)
 {
 	if (v->length == v->capacity) {
 		ctl_mem_t *newmem = NULL;
-		size_t new_cap;
+		size_t new_cap = 0;
 
-		new_cap = inc_size(v, v->capacity);
+		if (v->resized) {
+			while (new_cap < v->length)
+				new_cap = inc_size(v, new_cap);
+			v->resized = 0;
+		} else
+			new_cap = inc_size(v, v->capacity);
 
 		newmem = v->opts.common.allocator(memalloc(new_cap, size));
 		if (!newmem)
@@ -184,11 +192,16 @@ void vector_resize(vector_t *v, size_t size, void *val)
 			return;
 
 		memcpy(newmem, v->mem, v->elem_size * size);
+
+		if (v->length > size)
+			v->length = size;
 	} else
 		return;
 
 	v->begin = v->end = newmem;
 	v->end += v->elem_size * v->length;
+	v->capacity = new_size;
+	v->resized = 1;
 
 	free(v->mem);
 	v->mem = newmem;
@@ -196,6 +209,23 @@ void vector_resize(vector_t *v, size_t size, void *val)
 
 void vector_shrink_to_fit(vector_t *v)
 {
+	if (v->capacity > v->length) {
+		ctl_mem_t *newmem = NULL;
+
+		newmem = v->opts.common.allocator(v->elem_size * v->length);
+		if (!newmem)
+			return;
+
+		memcpy(newmem, v->mem, v->elem_size * v->length);
+
+		v->begin = v->end = newmem;
+		v->end += v->elem_size * v->length;
+		v->capacity = v->length;
+		v->resized = 1;
+
+		free(v->mem);
+		v->mem = newmem;
+	}
 }
 
 void vector_swap(vector_t *v1, vector_t *v2)
