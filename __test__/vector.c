@@ -5,47 +5,55 @@
 
 void test_vector(void)
 {
-    INIT_TEST_ASSERT();
+	INIT_TEST_ASSERT();
 
-    vector_t* v = vector_create(CTL_VAL_INT, NULL);
-    ASSERT_NOT_NULL(v);
+	vector_t *v = vector_alloc(CTL_VAL_INT, NULL);
+	ASSERT_NOT_NULL(v);
 
-    int n;
-    size_t len;
+	int n;
+	size_t len;
+	char *f = "adsasd";
 
-    n = 5;
-    vector_push_back(v, CTL_CREATE_VAL(n));
-    len = vector_length(v);
+	n = 5;
+	vector_push_back(v, f, sizeof(unsigned long));
+	vector_push_back(v, CTL_CREATE_VAL(n));
+	len = vector_size(v);
 
-    ASSERT_EXPR(len == 1);
+	ASSERT_EXPR(len == 1);
 
-    n = 6;
-    vector_push_back(v, CTL_CREATE_VAL(n));
-    len = vector_length(v);
+	n = 6;
+	vector_push_back(v, CTL_CREATE_VAL(n));
+	len = vector_size(v);
 
-    ASSERT_EXPR(len == 2);
+	ASSERT_EXPR(len == 2);
 
-    n = 3;
-    vector_push_back(v, CTL_CREATE_VAL(n));
-    len = vector_length(v);
+	n = 3;
+	vector_push_back(v, CTL_CREATE_VAL(n));
+	len = vector_size(v);
 
-    ASSERT_EXPR(len == 3);
+	ASSERT_EXPR(len == 3);
 
-    n = 1;
-    vector_push_back(v, CTL_CREATE_VAL(n));
-    len = vector_length(v);
+	n = 1;
+	vector_push_back(v, CTL_CREATE_VAL(n));
+	len = vector_size(v);
 
-    ASSERT_EXPR(len == 4);
+	ASSERT_EXPR(len == 4);
 
-    n = 7;
-    vector_push_back(v, CTL_CREATE_VAL(n));
-    len = vector_length(v);
+	n = 7;
+	vector_push_back(v, CTL_CREATE_VAL(n));
+	len = vector_size(v);
 
-    ASSERT_EXPR(len == 5);
+	ASSERT_EXPR(len == 5);
 
-    iterator_t it;
-    for (it = vector_begin(v); it != vector_end(v); MOVE_IT_FWD(v, it))
-        ;
+	iterator_t it;
+	for (it = vector_begin(v); it != vector_end(v); MOVE_IT_FWD(v, it))
+		;
 
-    vector_delete(v);
+	vector_free(v);
+}
+
+int main(void)
+{
+	test_vector();
+	return 0;
 }
