@@ -128,10 +128,10 @@ int vector_remove(vector_t *vector, const void *val, void *rmval,
 	return 0;
 }
 
-void vector_clear(vector_t *vector)
+void vector_clear(vector_t *v)
 {
-	while (vector->begin != vector->end)
-		vector->end -= vector->elem_size;
+	v->end = v->begin;
+	v->length = 0;
 }
 
 size_t vector_size(const vector_t *vector)
