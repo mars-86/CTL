@@ -4,9 +4,9 @@
 #include "common.h"
 #include <stdio.h>
 
-#define MOVE_IT_FWD(v, i) (i += vector_size(v))
+#define IT_MOVE_FWD(t, i) (i += sizeof(v))
 
-#define MOVE_IT_BWD(v, i) (i -= vector_size(v))
+#define IT_MOVE_BWD(t, i) (i -= sizeof(v))
 
 struct vector_options {
 	ctl_tops_t common;

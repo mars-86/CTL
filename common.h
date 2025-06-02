@@ -17,26 +17,23 @@
 #define CTL_COPY_DATA 0
 #define CTL_POINT_DATA 1
 
-#define CTL_CREATE_VAL(v) \
-    &v, sizeof(v)
+#define CTL_CREATE_VAL(v) &v, sizeof(v)
 
-#define CTL_CREATE_VAL_PTR(v) \
-    v, CTL_VAL_POINTER
+#define CTL_CREATE_VAL_PTR(v) v, CTL_VAL_POINTER
 
-#define CTL_DEREF_DATA(data, type) \
-    (*(type*)data)
+#define CTL_DEREF_DATA(data, type) (*(type *)data)
 
-typedef void* ctl_val_t;
-typedef void* (*ctl_allocator_t)(size_t);
-typedef void (*ctl_handle_cb_t)(const void* val);
-typedef int (*ctl_remove_cb_t)(const void* val, const void* rmval);
-typedef int (*ctl_delete_cb_t)(const void* val);
+typedef void *ctl_val_t;
+typedef void *(*ctl_allocator_t)(size_t);
+typedef void (*ctl_handle_cb_t)(const void *val);
+typedef int (*ctl_remove_cb_t)(const void *val, const void *rmval);
+typedef int (*ctl_delete_cb_t)(void *val);
 typedef struct template_options ctl_tops_t;
 
 struct template_options {
-    ctl_allocator_t allocator;
-    ctl_delete_cb_t delete_cb;
-    int flags;
+	ctl_allocator_t allocator;
+	ctl_delete_cb_t delete_cb;
+	int flags;
 };
 
 #endif // __C_TEMPLATE_LIB_COMMON_INCLUDED_H__

@@ -8,8 +8,16 @@
 
 #define DEFAULT_CAPACITY 1
 #define DEFAULT_GFACTOR 2
-#define memalloc(c, s) (c * s)
+#define memalloc(v, c, s) (v->opts.common.allocator(c * s))
 #define inc_size(v, c) c + (v->opts.chunck_size * v->opts.factor)
+#define del_elems(v)                                      \
+	do {                                              \
+		while (v->end != v->begin) {              \
+			v->opts.common.delete_cb(v->end); \
+			v->end -= v->elem_size;           \
+		}                                         \
+		v->opts.common.delete_cb(v->end);         \
+	} while (0)
 
 struct vector {
 	ctl_mem_t mem;
@@ -31,17 +39,26 @@ static void vector_set_opts(vector_t *vector,
 	struct vector_options *vo = &vector->opts;
 
 	if (options) {
-		vo->common.allocator = options->common.allocator;
 		vo->chunck_size = options->chunck_size;
 		vo->factor = options->factor;
+		if (options->common.allocator)
+			vo->common.allocator = options->common.allocator;
+		else
+			vo->common.allocator = malloc;
+
+		if (options->common.delete_cb)
+			vo->common.delete_cb = options->common.delete_cb;
+		else
+			vo->common.delete_cb = NULL;
 	} else {
 		vo->common.allocator = malloc;
+		vo->common.delete_cb = NULL;
 		vo->chunck_size = DEFAULT_CAPACITY;
 		vo->factor = DEFAULT_GFACTOR;
 	}
 }
 
-vector_t *vector_alloc(size_t elem_size, const struct vector_options *options)
+vector_t *vector_alloc(size_t size, const struct vector_options *options)
 {
 	vector_t *v = malloc(sizeof(vector_t));
 	if (!v)
@@ -55,20 +72,20 @@ vector_t *vector_alloc(size_t elem_size, const struct vector_options *options)
 
 	v->begin = v->end = v->mem;
 	v->length = 0;
-	v->elem_size = elem_size;
+	v->elem_size = size;
 	v->resized = 0;
 
 	return v;
 }
 
-iterator_t vector_begin(const vector_t *vector)
+iterator_t vector_begin(const vector_t *v)
 {
-	return vector->begin;
+	return v->begin;
 }
 
-iterator_t vector_end(const vector_t *vector)
+iterator_t vector_end(const vector_t *v)
 {
-	return vector->end;
+	return v->end;
 }
 
 size_t vector_capacity(const vector_t *v)
@@ -89,7 +106,7 @@ void vector_push_back(vector_t *v, void *val, size_t size)
 		} else
 			new_cap = inc_size(v, v->capacity);
 
-		newmem = v->opts.common.allocator(memalloc(new_cap, size));
+		newmem = memalloc(v, new_cap, size);
 		if (!newmem)
 			return;
 
@@ -118,11 +135,13 @@ int vector_pop_back(vector_t *v, void *rmval)
 
 	if (rmval)
 		memcpy(rmval, v->end, v->elem_size);
+	else if (v->opts.common.delete_cb)
+		v->opts.common.delete_cb(v->end);
 
 	return 0;
 }
 
-int vector_remove(vector_t *vector, const void *val, void *rmval,
+int vector_remove(vector_t *v, const void *val, void *rmval,
 		  int (*remove_fn)(const void *vcval, const void *rmval))
 {
 	return 0;
@@ -130,22 +149,60 @@ int vector_remove(vector_t *vector, const void *val, void *rmval,
 
 void vector_clear(vector_t *v)
 {
-	v->end = v->begin;
+	if (v->opts.common.delete_cb)
+		del_elems(v);
+	else
+		v->end = v->begin;
+
 	v->length = 0;
 }
 
-size_t vector_size(const vector_t *vector)
+size_t vector_size(const vector_t *v)
 {
-	return vector->length;
+	return v->length;
 }
 
-void vector_reserve(vector_t *v, size_t size)
+void vector_assign(vector_t *v, size_t n, void *val)
+{
+	ctl_mem_t newmem = NULL;
+
+	if (!val)
+		return;
+
+	if (v->capacity < n) {
+		newmem = memalloc(v, v->elem_size, n);
+		if (!newmem)
+			return;
+
+		memcpy(newmem, val, v->elem_size * n);
+
+		if (v->opts.common.delete_cb)
+			del_elems(v);
+
+		v->begin = v->end = newmem;
+		v->end += v->elem_size * n;
+		v->capacity = v->length = n;
+		v->resized = 1;
+
+		free(v->mem);
+		v->mem = newmem;
+	} else {
+		if (v->opts.common.delete_cb)
+			del_elems(v);
+
+		memcpy(v->mem, val, v->elem_size * n);
+
+		v->end += (v->elem_size * n);
+	}
+}
+
+void vector_reserve(vector_t *v, size_t n)
 {
 	ctl_mem_t newmem = NULL;
 	size_t new_size;
 
-	if (v->capacity < v->length + size) {
-		new_size = v->length + size;
+	if (v->capacity < v->length + n) {
+		new_size = v->length + n;
 
 		newmem = malloc(new_size * v->elem_size);
 		if (!newmem)
@@ -163,14 +220,14 @@ void vector_reserve(vector_t *v, size_t size)
 	}
 }
 
-void vector_resize(vector_t *v, size_t size, void *val)
+void vector_resize(vector_t *v, size_t n, void *val)
 {
 	ctl_mem_t newmem = NULL;
 	size_t new_size;
 
-	if (v->capacity < size) {
+	if (v->capacity < n) {
 		new_size = v->capacity;
-		while (new_size < size)
+		while (new_size < n)
 			new_size = inc_size(v, new_size);
 
 		newmem = v->opts.common.allocator(v->elem_size * new_size);
@@ -180,21 +237,21 @@ void vector_resize(vector_t *v, size_t size, void *val)
 		memcpy(newmem, v->mem, v->elem_size * v->length);
 		if (val)
 			memcpy(newmem + (v->elem_size * v->length), val,
-			       v->elem_size * (size - v->capacity));
+			       v->elem_size * (n - v->capacity));
 
-	} else if (v->capacity > size) {
+	} else if (v->capacity > n) {
 		new_size = 0;
-		while (new_size < size)
+		while (new_size < n)
 			new_size = inc_size(v, new_size);
 
 		newmem = v->opts.common.allocator(v->elem_size * new_size);
 		if (!newmem)
 			return;
 
-		memcpy(newmem, v->mem, v->elem_size * size);
+		memcpy(newmem, v->mem, v->elem_size * n);
 
-		if (v->length > size)
-			v->length = size;
+		if (v->length > n)
+			v->length = n;
 	} else
 		return;
 
@@ -237,8 +294,10 @@ void vector_swap(vector_t *v1, vector_t *v2)
 	v2->mem = tmp;
 }
 
-void vector_free(vector_t *vector)
+void vector_free(vector_t *v)
 {
-	free(vector->mem);
-	free(vector);
+	if (v->opts.common.delete_cb)
+		del_elems(v);
+	free(v->mem);
+	free(v);
 }
