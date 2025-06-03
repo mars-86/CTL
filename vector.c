@@ -26,14 +26,13 @@ struct vector {
 	size_t length;
 	size_t elem_size;
 	size_t capacity;
-	size_t prev_cap;
 	struct vector_options opts;
 
 	/* flag to indicate if the vector is manually resized */
 	int resized;
 };
 
-static void vector_set_opts(vector_t *vector,
+static void vector_set_opts(vector_t vector,
 			    const struct vector_options *options)
 {
 	struct vector_options *vo = &vector->opts;
@@ -58,9 +57,9 @@ static void vector_set_opts(vector_t *vector,
 	}
 }
 
-vector_t *vector_alloc(size_t size, const struct vector_options *options)
+vector_t vector_alloc(size_t size, const struct vector_options *options)
 {
-	vector_t *v = malloc(sizeof(vector_t));
+	vector_t v = malloc(sizeof(vector_t));
 	if (!v)
 		return NULL;
 
@@ -68,8 +67,6 @@ vector_t *vector_alloc(size_t size, const struct vector_options *options)
 
 	v->mem = NULL;
 	v->capacity = 0;
-	v->prev_cap = 0;
-
 	v->begin = v->end = v->mem;
 	v->length = 0;
 	v->elem_size = size;
@@ -78,22 +75,22 @@ vector_t *vector_alloc(size_t size, const struct vector_options *options)
 	return v;
 }
 
-iterator_t vector_begin(const vector_t *v)
+iterator_t vector_begin(const vector_t v)
 {
 	return v->begin;
 }
 
-iterator_t vector_end(const vector_t *v)
+iterator_t vector_end(const vector_t v)
 {
 	return v->end;
 }
 
-size_t vector_capacity(const vector_t *v)
+size_t vector_capacity(const vector_t v)
 {
 	return v->capacity;
 }
 
-void vector_push_back(vector_t *v, void *val, size_t size)
+void vector_push_back(vector_t v, void *val, size_t size)
 {
 	if (v->length == v->capacity) {
 		ctl_mem_t newmem = NULL;
@@ -125,7 +122,7 @@ void vector_push_back(vector_t *v, void *val, size_t size)
 	v->length++;
 }
 
-int vector_pop_back(vector_t *v, void *rmval)
+int vector_pop_back(vector_t v, void *rmval)
 {
 	if (!v->length)
 		return 1;
@@ -141,7 +138,15 @@ int vector_pop_back(vector_t *v, void *rmval)
 	return 0;
 }
 
-int vector_remove(vector_t *v, const void *val, void *rmval,
+const void *vector_at(vector_t v, size_t n)
+{
+	if (n > v->length - 1)
+		return NULL;
+
+	return v->mem + (n * v->elem_size);
+}
+
+int vector_remove(vector_t v, const void *val, void *rmval,
 		  int (*remove_fn)(const void *vcval, const void *rmval))
 {
 	return 0;
@@ -149,20 +154,20 @@ int vector_remove(vector_t *v, const void *val, void *rmval,
 
 void vector_clear(vector_t *v)
 {
-	if (v->opts.common.delete_cb)
-		del_elems(v);
+	if ((*v)->opts.common.delete_cb)
+		del_elems((*v));
 	else
-		v->end = v->begin;
+		(*v)->end = (*v)->begin;
 
-	v->length = 0;
+	(*v)->length = 0;
 }
 
-size_t vector_size(const vector_t *v)
+size_t vector_size(const vector_t v)
 {
 	return v->length;
 }
 
-void vector_assign(vector_t *v, size_t n, void *val)
+void vector_assign(vector_t v, size_t n, void *val)
 {
 	ctl_mem_t newmem = NULL;
 
@@ -196,7 +201,7 @@ void vector_assign(vector_t *v, size_t n, void *val)
 	}
 }
 
-void vector_reserve(vector_t *v, size_t n)
+void vector_reserve(vector_t v, size_t n)
 {
 	ctl_mem_t newmem = NULL;
 	size_t new_size;
@@ -220,7 +225,7 @@ void vector_reserve(vector_t *v, size_t n)
 	}
 }
 
-void vector_resize(vector_t *v, size_t n, void *val)
+void vector_resize(vector_t v, size_t n, void *val)
 {
 	ctl_mem_t newmem = NULL;
 	size_t new_size;
@@ -264,7 +269,7 @@ void vector_resize(vector_t *v, size_t n, void *val)
 	v->mem = newmem;
 }
 
-void vector_shrink_to_fit(vector_t *v)
+void vector_shrink_to_fit(vector_t v)
 {
 	if (v->capacity > v->length) {
 		ctl_mem_t newmem = NULL;
@@ -287,14 +292,14 @@ void vector_shrink_to_fit(vector_t *v)
 
 void vector_swap(vector_t *v1, vector_t *v2)
 {
-	ctl_mem_t tmp;
+	vector_t tmp = NULL;
 
-	tmp = v1->mem;
-	v1->mem = v2->mem;
-	v2->mem = tmp;
+	tmp = *v1;
+	v1 = v2;
+	*v2 = tmp;
 }
 
-void vector_free(vector_t *v)
+void vector_free(vector_t v)
 {
 	if (v->opts.common.delete_cb)
 		del_elems(v);
