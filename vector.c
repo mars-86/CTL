@@ -80,14 +80,56 @@ iterator_t vector_begin(const vector_t v)
 	return v->begin;
 }
 
+const_iterator_t vector_cbegin(const vector_t v)
+{
+	return (const_iterator_t)v->begin;
+}
+
 iterator_t vector_end(const vector_t v)
 {
 	return v->end;
 }
 
+const_iterator_t vector_cend(const vector_t v)
+{
+	return (const_iterator_t)v->end;
+}
+
+void *vector_at(vector_t v, size_t n)
+{
+	if (n > v->length - 1)
+		return NULL;
+
+	return v->mem + (n * v->elem_size);
+}
+
+const void *vector_cat(vector_t v, size_t n)
+{
+	if (n > v->length - 1)
+		return NULL;
+
+	return (const void *)(v->mem + (n * v->elem_size));
+}
+
 size_t vector_capacity(const vector_t v)
 {
 	return v->capacity;
+}
+
+void *vector_front(vector_t v)
+{
+	if (!v->length)
+		return NULL;
+
+	return v->begin;
+}
+
+void *vector_back(vector_t v)
+{
+	if (!v->length)
+		return NULL;
+
+	return v->end - v->elem_size;
 }
 
 void vector_push_back(vector_t v, void *val, size_t size)
@@ -136,14 +178,6 @@ int vector_pop_back(vector_t v, void *rmval)
 		v->opts.common.delete_cb(v->end);
 
 	return 0;
-}
-
-const void *vector_at(vector_t v, size_t n)
-{
-	if (n > v->length - 1)
-		return NULL;
-
-	return v->mem + (n * v->elem_size);
 }
 
 int vector_remove(vector_t v, const void *val, void *rmval,

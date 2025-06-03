@@ -15,12 +15,17 @@ struct vector_options {
 };
 
 typedef struct vector *vector_t;
-typedef const void *iterator_t;
+typedef void *iterator_t;
+typedef const void *const_iterator_t;
 
 vector_t vector_alloc(size_t size, const struct vector_options *options);
 
 iterator_t vector_begin(const vector_t v);
+const_iterator_t vector_cbegin(const vector_t v);
 iterator_t vector_end(const vector_t v);
+const_iterator_t vector_cend(const vector_t v);
+void *vector_at(vector_t v, size_t n);
+const void *vector_cat(vector_t v, size_t n);
 size_t vector_capacity(const vector_t v);
 
 void vector_push_back(vector_t vector, void *val, size_t size);
