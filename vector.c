@@ -38,7 +38,6 @@
 		v->_begin.ptr = mem;            \
 		v->_begin.size = v->size;       \
 		v->_begin.pos = 0;              \
-		v->_begin.ptr += (v->size * n); \
 		v->begin = v->_begin;           \
 		v->rend = v->_rend = v->_begin; \
 	} while (0)
@@ -177,16 +176,24 @@ vector_t vector_alloc(const char *type, size_t size, size_t n, void **val,
 	return v;
 }
 
-iterator_t vector_begin(const vector_t v)
+void vector_begin(const vector_t v, iterator_t it)
 {
-	v->begin = v->_begin;
-	return (iterator_t)&v->begin;
+	struct iterator_internal **_it = (struct iterator_internal **)&it;
+
+	(*_it)->ptr = v->begin.ptr;
+	(*_it)->pos = v->begin.pos;
+	(*_it)->size = v->begin.size;
+	(*_it)->length = v->length;
 }
 
-iterator_t vector_end(const vector_t v)
+void vector_end(const vector_t v, iterator_t it)
 {
-	v->end = v->_end;
-	return (iterator_t)&v->end;
+	struct iterator_internal **_it = (struct iterator_internal **)&it;
+
+	(*_it)->ptr = v->end.ptr;
+	(*_it)->pos = v->end.pos;
+	(*_it)->size = v->end.size;
+	(*_it)->length = v->length;
 }
 
 const_iterator_t vector_cbegin(const vector_t v)
@@ -304,8 +311,10 @@ int vector_push_back(vector_t v, void *val, const char *type)
 
 		set_iterators(v, v->mem, v->length);
 	} else {
-		// TODO set const it and rev it
-		set_end_iterator(v, v->mem, v->length);
+		v->_end.pos = v->length;
+		v->_end.ptr += v->size;
+		v->end = v->_end;
+		v->rbegin = v->_rbegin = v->_end;
 	}
 
 	return 0;
@@ -330,43 +339,55 @@ int vector_pop_back(vector_t v, void *rmval)
 	return 0;
 }
 
-// TODO: review this, cast iterators to internal iterators
 int vector_erase(vector_t v, iterator_t first, iterator_t last)
 {
 	c_mem_t newmen = NULL;
+	struct iterator_internal *_first = (struct iterator_internal *)first;
+	struct iterator_internal *_last = (struct iterator_internal *)last;
+
+	if (_first->pos == (v)->_end.pos || _last->pos < _first->pos ||
+	    _last->pos == 0)
+		return 0;
 
 	newmen = memalloc(v, v->capacity, v->size);
 	if (!newmen)
 		return -1;
 
-	if (v->_begin.ptr == first) {
-		memcpy(newmen, c_it_data(last),
-		       v->end.pos - (c_it_position(last) * v->size));
-	} else if (v->_end.ptr == first) {
+	printf("first pos: %ld\n", _first->pos);
+	printf("last pos: %ld\n", _last->pos);
+
+	size_t newlen = v->length - (_last->pos - _first->pos) - 1;
+	printf("Vector newlen: %ld\n", newlen);
+
+	if (v->_begin.pos == _first->pos) {
+		memcpy(newmen, _last->ptr + v->size,
+		       (v->_end.pos - _last->pos) * v->size);
+	} else {
+		memcpy(newmen, v->_begin.ptr, _first->pos * v->size);
+		memcpy(newmen + (_first->pos * v->size), _last->ptr + v->size,
+		       (v->_end.pos - _last->pos - 1) * v->size);
 	}
 
-	if (v->opts.common.delete_cb)
-		while (first != last) {
-			v->opts.common.delete_cb(c_it_data(first));
-			c_it_advance(first, v->size);
+	if (v->opts.common.delete_cb) {
+		while (_first->pos < _last->pos) {
+			v->opts.common.delete_cb(_first->ptr);
+			c_it_advance((iterator_t)_first, (v->size));
 		}
+	}
+
+	free(v->mem);
+
+	v->mem = newmen;
+	v->length = newlen;
+
+	set_iterators(v, v->mem, v->length);
 
 	return 0;
 }
 
-// TODO: review this
 int vector_erase_at(vector_t v, iterator_t position)
 {
-	c_mem_t newmen = NULL;
-
-	newmen = memalloc(v, v->capacity, v->size);
-	if (!newmen)
-		return -1;
-
-	if (v->opts.common.delete_cb)
-		v->opts.common.delete_cb(position);
-
-	return 0;
+	return vector_erase(v, position, position);
 }
 
 int vector_remove(vector_t v, iterator_t first, iterator_t last,
