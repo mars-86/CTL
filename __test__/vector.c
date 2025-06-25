@@ -1,6 +1,5 @@
 #include "../vector.h"
 #include "../common.h"
-#include "assert.h"
 #include "test.h"
 #include <stdio.h>
 #include <assert.h>
@@ -199,23 +198,21 @@ static void test_vector_erase(TestFixture *fixture, gconstpointer data)
 
 	g_assert_cmpint(vector_size(v), ==, 7);
 
-	iterator_t it, it2, it3, it4;
+	iterator_t it, it2, it3, it4, it5;
 
 	it = it_alloc();
 	it2 = it_alloc();
 	it3 = it_alloc();
 	it4 = it_alloc();
+	it5 = it_alloc();
 
 	vector_begin(v, it);
-
-	printf("%d\n", c_deref_data(int, c_it_data(it)));
-
-	printf("%d\n", c_deref_data(int, c_it_data(it)));
+	g_assert_cmpint(c_deref_data(int, c_it_data(it)), ==, -5);
 
 	vector_begin(v, it2);
 	c_it_move(it2);
 
-	printf("%d\n\n", c_deref_data(int, c_it_data(it)));
+	g_assert_cmpint(c_deref_data(int, c_it_data(it2)), ==, 6);
 
 	for (i = 0, vector_begin(v, it3), vector_end(v, it4);
 	     c_it_cmp(it3, it4); c_it_move(it3), ++i)
@@ -238,10 +235,14 @@ static void test_vector_erase(TestFixture *fixture, gconstpointer data)
 		g_assert_cmpint(c_deref_data(int, c_it_data(it3)), ==,
 				arr_new[i]);
 
+	vector_end(v, it5);
+	g_assert_cmpint(c_deref_data(int, c_it_data(it5)), ==, 8);
+
 	it_free(it);
 	it_free(it2);
 	it_free(it3);
 	it_free(it4);
+	it_free(it5);
 }
 
 int main(int argc, char **argv)

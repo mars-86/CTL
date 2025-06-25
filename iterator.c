@@ -23,13 +23,17 @@ iterator_t it_alloc(void)
 	if (!it)
 		return NULL;
 
+	it->ii.ptr = NULL;
+
 	return it;
 }
 
 void *c_it_data(const iterator_t it)
 {
-	return (it->ii.pos < it->ii.length) ? it->ii.ptr :
-					      it->ii.ptr - it->ii.size;
+	if (it->ii.ptr)
+		return (it->ii.pos < it->ii.length) ? it->ii.ptr :
+						      it->ii.ptr - it->ii.size;
+	return NULL;
 }
 
 void c_it_move(iterator_t it)
@@ -49,10 +53,11 @@ void c_it_move(iterator_t it)
 
 void c_it_advance(iterator_t it, size_t n)
 {
-	if (it->ii.pos + n <= it->ii.length) {
-		it->ii.ptr += (it->ii.size * n);
-		it->ii.pos += n;
-	}
+	if (it->ii.ptr)
+		if (it->ii.pos + n <= it->ii.length) {
+			it->ii.ptr += (it->ii.size * n);
+			it->ii.pos += n;
+		}
 }
 
 int c_it_distance(const iterator_t first, const iterator_t last)
