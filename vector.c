@@ -24,7 +24,7 @@
 
 #define rm_elems_cb(v, cb) rm_internal(v, cb)
 
-#define rm_elems(v) rm_internal(v, v->opts.common.delete_cb)
+#define rm_elems(v) rm_internal(v, v->opts.common.data_dealloc)
 
 #define init_vec_props(v, c, l, r) \
 	do {                       \
@@ -58,6 +58,8 @@
 		set_end_iterator(v, mem, n);   \
 	} while (0)
 
+// TODO alloc always size + 1 in resize, shrink_to_fit an so on
+
 struct vector {
 	/* vector memory, here the elements are stored */
 	c_mem_t mem;
@@ -89,8 +91,13 @@ struct vector {
 	/* the amount of elements in the vector */
 	size_t length;
 
-	/* this var has the type of vector element */
+#ifndef C_SKIP_RT_DATA_TYPE_CHECK
+	/*
+	 * this var has the type of vector element for
+	 * data type checking at run-time
+	 */
 	const char *type;
+#endif
 
 	/* this var has the size in bytes of vector element */
 	size_t size;
@@ -119,13 +126,13 @@ static void vector_set_opts(vector_t vector,
 		else
 			vo->common.allocator = malloc;
 
-		if (options->common.delete_cb)
-			vo->common.delete_cb = options->common.delete_cb;
+		if (options->common.data_dealloc)
+			vo->common.data_dealloc = options->common.data_dealloc;
 		else
-			vo->common.delete_cb = NULL;
+			vo->common.data_dealloc = NULL;
 	} else {
 		vo->common.allocator = malloc;
-		vo->common.delete_cb = NULL;
+		vo->common.data_dealloc = NULL;
 		vo->chunck_size = DEFAULT_CAPACITY;
 		vo->gfactor = DEFAULT_GFACTOR;
 		vo->factor = 1;
@@ -178,7 +185,8 @@ vector_t vector_alloc(const char *type, size_t size, size_t n, void **val,
 
 void vector_begin(const vector_t v, iterator_t it)
 {
-	struct iterator_internal **_it = (struct iterator_internal **)&it;
+	struct iterator_internal **__restrict__ _it =
+		(struct iterator_internal **)&it;
 
 	(*_it)->ptr = v->begin.ptr;
 	(*_it)->pos = v->begin.pos;
@@ -188,7 +196,8 @@ void vector_begin(const vector_t v, iterator_t it)
 
 void vector_end(const vector_t v, iterator_t it)
 {
-	struct iterator_internal **_it = (struct iterator_internal **)&it;
+	struct iterator_internal **__restrict__ _it =
+		(struct iterator_internal **)&it;
 
 	(*_it)->ptr = v->end.ptr;
 	(*_it)->pos = v->end.pos;
@@ -196,28 +205,48 @@ void vector_end(const vector_t v, iterator_t it)
 	(*_it)->length = v->length;
 }
 
-const_iterator_t vector_cbegin(const vector_t v)
+void vector_cbegin(const vector_t v, const_iterator_t it)
 {
-	v->begin = v->_begin;
-	return (const_iterator_t)&v->begin;
+	struct iterator_internal **__restrict__ _it =
+		(struct iterator_internal **)&it;
+
+	(*_it)->ptr = v->begin.ptr;
+	(*_it)->pos = v->begin.pos;
+	(*_it)->size = v->begin.size;
+	(*_it)->length = v->length;
 }
 
-const_iterator_t vector_cend(const vector_t v)
+void vector_cend(const vector_t v, const_iterator_t it)
 {
-	v->end = v->_end;
-	return (const_iterator_t)&v->end;
+	struct iterator_internal **__restrict__ _it =
+		(struct iterator_internal **)&it;
+
+	(*_it)->ptr = v->end.ptr;
+	(*_it)->pos = v->end.pos;
+	(*_it)->size = v->end.size;
+	(*_it)->length = v->length;
 }
 
-reverse_iterator_t vector_rbegin(const vector_t v)
+void vector_rbegin(const vector_t v, reverse_iterator_t it)
 {
-	v->rbegin = v->_rbegin;
-	return (reverse_iterator_t)&v->rbegin;
+	struct iterator_internal **__restrict__ _it =
+		(struct iterator_internal **)&it;
+
+	(*_it)->ptr = v->rend.ptr;
+	(*_it)->pos = v->rend.pos;
+	(*_it)->size = v->rend.size;
+	(*_it)->length = v->length;
 }
 
-reverse_iterator_t vector_rend(const vector_t v)
+void vector_rend(const vector_t v, reverse_iterator_t it)
 {
-	v->rend = v->_rend;
-	return (reverse_iterator_t)&v->rend;
+	struct iterator_internal **__restrict__ _it =
+		(struct iterator_internal **)&it;
+
+	(*_it)->ptr = v->rbegin.ptr;
+	(*_it)->pos = v->rbegin.pos;
+	(*_it)->size = v->rbegin.size;
+	(*_it)->length = v->length;
 }
 
 void *vector_at(vector_t v, size_t n)
@@ -328,20 +357,20 @@ int vector_pop_back(vector_t v, void *rmval)
 	v->length--;
 
 	v->_end.ptr -= v->size;
+	v->_end.pos--;
 	v->end = v->_end;
 	v->rbegin = v->_rbegin = v->_end;
 
 	if (rmval)
 		memcpy(rmval, v->end.ptr, v->size);
-	else if (v->opts.common.delete_cb)
-		v->opts.common.delete_cb(v->end.ptr);
+	else if (v->opts.common.data_dealloc)
+		v->opts.common.data_dealloc(v->end.ptr);
 
 	return 0;
 }
 
 int vector_erase(vector_t v, iterator_t first, iterator_t last)
 {
-	c_mem_t newmen = NULL;
 	struct iterator_internal *_first = (struct iterator_internal *)first;
 	struct iterator_internal *_last = (struct iterator_internal *)last;
 
@@ -349,36 +378,27 @@ int vector_erase(vector_t v, iterator_t first, iterator_t last)
 	    _last->pos == 0)
 		return 0;
 
-	newmen = memalloc(v, v->capacity, v->size);
-	if (!newmen)
-		return -1;
-
+#ifdef _DEBUG
 	printf("first pos: %ld\n", _first->pos);
 	printf("last pos: %ld\n", _last->pos);
+#endif
 
-	size_t newlen = v->length - (_last->pos - _first->pos) - 1;
-	printf("Vector newlen: %ld\n", newlen);
+	if (v->opts.common.data_dealloc)
+		while (_first->pos <= _last->pos) {
+			v->opts.common.data_dealloc(_first->ptr);
+			c_it_advance((iterator_t)_first, (v->size));
+		}
 
 	if (v->_begin.pos == _first->pos) {
-		memcpy(newmen, _last->ptr + v->size,
+		memcpy(v->mem, _last->ptr + v->size,
 		       (v->_end.pos - _last->pos) * v->size);
 	} else {
-		memcpy(newmen, v->_begin.ptr, _first->pos * v->size);
-		memcpy(newmen + (_first->pos * v->size), _last->ptr + v->size,
+		memcpy(v->mem, v->_begin.ptr, _first->pos * v->size);
+		memcpy(v->mem + (_first->pos * v->size), _last->ptr + v->size,
 		       (v->_end.pos - _last->pos - 1) * v->size);
 	}
 
-	if (v->opts.common.delete_cb) {
-		while (_first->pos < _last->pos) {
-			v->opts.common.delete_cb(_first->ptr);
-			c_it_advance((iterator_t)_first, (v->size));
-		}
-	}
-
-	free(v->mem);
-
-	v->mem = newmen;
-	v->length = newlen;
+	v->length = v->length - (_last->pos - _first->pos) - 1;
 
 	set_iterators(v, v->mem, v->length);
 
@@ -391,54 +411,60 @@ int vector_erase_at(vector_t v, iterator_t position)
 }
 
 int vector_remove(vector_t v, iterator_t first, iterator_t last,
-		  ctl_delete_cb_t cb)
+		  c_data_deallocator_t cb)
 {
-	c_mem_t newmen = NULL;
+	struct iterator_internal *_first = (struct iterator_internal *)first;
+	struct iterator_internal *_last = (struct iterator_internal *)last;
 
-	newmen = memalloc(v, v->capacity, v->size);
-	if (!newmen)
-		return -1;
+	if (_first->pos == (v)->_end.pos || _last->pos < _first->pos ||
+	    _last->pos == 0)
+		return 0;
 
-	if (v->_begin.ptr == first) {
-		while (first != last)
-			c_it_move(first);
+#ifdef _DEBUG
+	printf("first pos: %ld\n", _first->pos);
+	printf("last pos: %ld\n", _last->pos);
+#endif
+
+	while (_first->pos <= _last->pos) {
+		cb(_first->ptr);
+		c_it_advance((iterator_t)_first, (v->size));
 	}
 
-	while (first != last) {
-		cb(first);
-		c_it_advance(first, v->size);
+	if (v->_begin.pos == _first->pos) {
+		memcpy(v->mem, _last->ptr + v->size,
+		       (v->_end.pos - _last->pos) * v->size);
+	} else {
+		memcpy(v->mem, v->_begin.ptr, _first->pos * v->size);
+		memcpy(v->mem + (_first->pos * v->size), _last->ptr + v->size,
+		       (v->_end.pos - _last->pos - 1) * v->size);
 	}
+
+	v->length = v->length - (_last->pos - _first->pos) - 1;
+
+	set_iterators(v, v->mem, v->length);
 
 	return 0;
 }
 
-int vector_remove_at(vector_t v, iterator_t position, ctl_delete_cb_t cb)
+int vector_remove_at(vector_t v, iterator_t position, c_data_deallocator_t cb)
 {
-	c_mem_t newmen = NULL;
-
-	newmen = memalloc(v, v->capacity, v->size);
-	if (!newmen)
-		return -1;
-
-	cb(position);
-
-	return 0;
+	return vector_remove(v, position, position, cb);
 }
 
-void vector_clear(vector_t *v)
+void vector_clear(vector_t v)
 {
-	if ((*v)->opts.common.delete_cb)
-		rm_elems((*v));
+	if (v->opts.common.data_dealloc)
+		rm_elems(v);
 	else
-		(*v)->end = (*v)->begin;
+		v->end = v->begin;
 
-	(*v)->length = 0;
+	v->length = 0;
 }
 
-void vector_flush(vector_t *v, ctl_delete_cb_t cb)
+void vector_flush(vector_t v, c_data_deallocator_t cb)
 {
-	rm_elems_cb((*v), cb);
-	(*v)->length = 0;
+	rm_elems_cb(v, cb);
+	v->length = 0;
 }
 
 size_t vector_size(const vector_t v)
@@ -446,21 +472,21 @@ size_t vector_size(const vector_t v)
 	return v->length;
 }
 
-void vector_assign(vector_t v, size_t n, void *val, const char *type)
+int vector_assign(vector_t v, size_t n, void *val, const char *type)
 {
 	c_mem_t newmem = NULL;
 
 	if (!val)
-		return;
+		return -1;
 
 	if (v->capacity < n) {
 		newmem = memalloc(v, v->size, n);
 		if (!newmem)
-			return;
+			return -1;
 
 		memcpy(newmem, val, v->size * n);
 
-		if (v->opts.common.delete_cb)
+		if (v->opts.common.data_dealloc)
 			rm_elems(v);
 
 		free(v->mem);
@@ -471,7 +497,7 @@ void vector_assign(vector_t v, size_t n, void *val, const char *type)
 		v->capacity = v->length = n;
 		v->resized = 1;
 	} else {
-		if (v->opts.common.delete_cb)
+		if (v->opts.common.data_dealloc)
 			rm_elems(v);
 
 		memcpy(v->mem, val, v->size * n);
@@ -479,6 +505,8 @@ void vector_assign(vector_t v, size_t n, void *val, const char *type)
 		v->_end.ptr += (v->size * n);
 		v->end = v->_end;
 	}
+
+	return 0;
 }
 
 void vector_reserve(vector_t v, size_t n)
@@ -549,25 +577,27 @@ void vector_resize(vector_t v, size_t n, void *val, const char *type)
 	v->resized = 1;
 }
 
-void vector_shrink_to_fit(vector_t v)
+int vector_shrink_to_fit(vector_t v)
 {
 	if (v->capacity > v->length) {
 		c_mem_t newmem = NULL;
 
 		newmem = v->opts.common.allocator(v->size * v->length);
 		if (!newmem)
-			return;
+			return -1;
 
 		memcpy(newmem, v->mem, v->size * v->length);
+
+		free(v->mem);
+		v->mem = newmem;
 
 		set_iterators(v, v->mem, v->length);
 
 		v->capacity = v->length;
 		v->resized = 1;
-
-		free(v->mem);
-		v->mem = newmem;
 	}
+
+	return 0;
 }
 
 void vector_swap(vector_t *v1, vector_t *v2)
@@ -599,17 +629,15 @@ vector_t vector_dup(const vector_t v)
 
 void vector_free(vector_t v)
 {
-	if (v->opts.common.delete_cb)
+	if (v->opts.common.data_dealloc)
 		rm_elems(v);
 	free(v->mem);
 	free(v);
 }
 
-void vector_delete(vector_t v, ctl_delete_cb_t cb)
+void vector_delete(vector_t v, c_data_deallocator_t cb)
 {
-	vector_t *_v = &v;
-
-	rm_elems_cb((*_v), cb);
-	free((*_v)->mem);
-	free(*_v);
+	rm_elems_cb(v, cb);
+	free(v->mem);
+	free(v);
 }

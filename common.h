@@ -51,17 +51,70 @@ struct template_options {
 	c_data_allocator_t data_alloc;
 
 	/* container data deallocator */
-	c_data_allocator_t data_dealloc;
+	c_data_deallocator_t data_dealloc;
 
-	/* TODO remove this*/
-	ctl_delete_cb_t delete_cb;
-
-#ifdef C_RT_DATA_TYPE_CHECK
-	/* for data type checking at run-time */
-	char *data_typ;
-#endif
 	/* container flags */
 	int flags;
 };
+
+static inline char *c_data_int8(char n)
+{
+	char *_n = &n;
+	return _n;
+}
+
+static inline unsigned char *c_data_uint8(unsigned char n)
+{
+	unsigned char *_n = &n;
+	return _n;
+}
+
+static inline short *c_data_int16(short n)
+{
+	short *_n = &n;
+	return _n;
+}
+
+static inline unsigned short *c_data_uint16(unsigned short n)
+{
+	unsigned short *_n = &n;
+	return _n;
+}
+
+static inline int *c_data_int32(int n)
+{
+	int *_n = &n;
+	return _n;
+}
+
+static inline unsigned int *c_data_uint32(unsigned int n)
+{
+	unsigned int *_n = &n;
+	return _n;
+}
+
+static inline long *c_data_long64(long n)
+{
+	long *_n = &n;
+	return _n;
+}
+
+static inline unsigned long *c_data_ulong64(unsigned long n)
+{
+	unsigned long *_n = &n;
+	return _n;
+}
+
+static inline float *c_data_float(float n)
+{
+	float *_n = &n;
+	return _n;
+}
+
+static inline double *c_data_double(double n)
+{
+	double *_n = &n;
+	return _n;
+}
 
 #endif // __C_TEMPLATE_LIB_COMMON_INCLUDED_H__
