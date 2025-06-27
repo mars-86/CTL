@@ -29,6 +29,7 @@
 #define c_create_data_ptr(v) v, C_DATA_SIZE_POINTER
 
 #define c_deref_data(type, data) (data ? (*(type *)data) : 0)
+#define c_cast_ptr(type, data) (data ? ((type *)data) : NULL)
 
 typedef void *ctl_val_t;
 typedef void *(*c_allocator_t)(size_t);

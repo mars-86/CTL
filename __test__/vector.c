@@ -181,11 +181,10 @@ static void test_vector_pop_back(TestFixture *fixture, gconstpointer data)
 
 static void test_vector_erase(TestFixture *fixture, gconstpointer data)
 {
-	vector_t v = vector_alloc_empty(int, NULL);
+	vector_t v = fixture->v;
 	int arr[] = { -5, 6, 3, -1, 7, 3, 8 };
 	size_t arr_size = sizeof(arr) / sizeof(*arr);
 	int arr_new[] = { -5, 6, 8 };
-	size_t arr_new_size = sizeof(arr_new) / sizeof(*arr_new);
 	int i;
 
 	vector_push_back_m(v, c_data_int32(-5), int);
@@ -245,6 +244,108 @@ static void test_vector_erase(TestFixture *fixture, gconstpointer data)
 	it_free(it5);
 }
 
+static void test_vector_erase_at(TestFixture *fixture, gconstpointer data)
+{
+	vector_t v = fixture->v;
+	int arr1[] = { -5, 6, 3, -1, 7, 3, 8 };
+	int arr2[] = { -5, 6, -1, 7, 3, 8 };
+	int arr3[] = { -5, 6, 7 };
+	int arr4[] = { 6, 7 };
+	int i;
+
+	vector_push_back_m(v, c_data_int32(-5), int);
+	vector_push_back_m(v, c_data_int32(6), int);
+	vector_push_back_m(v, c_data_int32(3), int);
+	vector_push_back_m(v, c_data_int32(-1), int);
+	vector_push_back_m(v, c_data_int32(7), int);
+	vector_push_back_m(v, c_data_int32(3), int);
+	vector_push_back_m(v, c_data_int32(8), int);
+
+	iterator_t it, it2;
+
+	it = it_alloc();
+	it2 = it_alloc();
+
+	for (i = 0, vector_begin(v, it), vector_end(v, it2); c_it_cmp(it, it2);
+	     c_it_move(it), ++i)
+		g_assert_cmpint(c_deref_data(int, c_it_data(it)), ==, arr1[i]);
+
+	vector_begin(v, it);
+	c_it_advance(it, 2);
+
+	vector_erase_at(v, it);
+
+	for (i = 0, vector_begin(v, it), vector_end(v, it2); c_it_cmp(it, it2);
+	     c_it_move(it), ++i)
+		g_assert_cmpint(c_deref_data(int, c_it_data(it)), ==, arr2[i]);
+
+	vector_begin(v, it);
+	c_it_advance(it, 2);
+
+	vector_erase_at(v, it);
+
+	c_it_advance(it, 1);
+
+	vector_erase_at(v, it);
+	vector_erase_at(v, it);
+
+	for (i = 0, vector_begin(v, it), vector_end(v, it2); c_it_cmp(it, it2);
+	     c_it_move(it), ++i)
+		g_assert_cmpint(c_deref_data(int, c_it_data(it)), ==, arr3[i]);
+
+	vector_begin(v, it);
+	vector_erase_at(v, it);
+
+	for (i = 0, vector_begin(v, it), vector_end(v, it2); c_it_cmp(it, it2);
+	     c_it_move(it), ++i)
+		g_assert_cmpint(c_deref_data(int, c_it_data(it)), ==, arr4[i]);
+
+	it_free(it);
+	it_free(it2);
+}
+
+static void test_vector_clear(TestFixture *fixture, gconstpointer data)
+{
+	vector_t v = fixture->v;
+	int arr1[] = { -5, 6, 3, -1, 7, 3, 8 };
+	size_t arr1_size = sizeof(arr1) / sizeof(*arr1);
+	int arr2[] = {};
+	size_t arr2_size = sizeof(arr2) / sizeof(*arr2);
+	int i;
+
+	vector_push_back_m(v, c_data_int32(-5), int);
+	vector_push_back_m(v, c_data_int32(6), int);
+	vector_push_back_m(v, c_data_int32(3), int);
+	vector_push_back_m(v, c_data_int32(-1), int);
+	vector_push_back_m(v, c_data_int32(7), int);
+	vector_push_back_m(v, c_data_int32(3), int);
+	vector_push_back_m(v, c_data_int32(8), int);
+
+	iterator_t it, it2;
+
+	it = it_alloc();
+	it2 = it_alloc();
+
+	for (i = 0, vector_begin(v, it), vector_end(v, it2); c_it_cmp(it, it2);
+	     c_it_move(it), ++i)
+		g_assert_cmpint(c_deref_data(int, c_it_data(it)), ==, arr1[i]);
+
+	g_assert_cmpint(vector_size(v), ==, arr1_size);
+
+	vector_clear(v);
+
+	vector_begin(v, it);
+
+	for (i = 0, vector_begin(v, it), vector_end(v, it2); c_it_cmp(it, it2);
+	     c_it_move(it), ++i)
+		g_assert_cmpint(c_deref_data(int, c_it_data(it)), ==, arr2[i]);
+
+	g_assert_cmpint(vector_size(v), ==, arr2_size);
+
+	it_free(it);
+	it_free(it2);
+}
+
 int main(int argc, char **argv)
 {
 	int result;
@@ -256,6 +357,8 @@ int main(int argc, char **argv)
 	ADD_TEST(vector, push_back, TestFixture, NULL);
 	ADD_TEST(vector, pop_back, TestFixture, NULL);
 	ADD_TEST(vector, erase, TestFixture, NULL);
+	ADD_TEST(vector, erase_at, TestFixture, NULL);
+	ADD_TEST(vector, clear, TestFixture, NULL);
 
 	/* Run the tests */
 	result = g_test_run();

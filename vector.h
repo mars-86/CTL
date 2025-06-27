@@ -75,6 +75,7 @@ extern int vector_pop_back(vector_t __restrict__ v, void *__restrict__ rmval)
 	__attribute__((nonnull(1)));
 
 extern int vector_erase(vector_t v, iterator_t first, iterator_t last);
+extern int vector_erase_at(vector_t v, iterator_t position);
 extern int vector_remove(vector_t v, iterator_t first, iterator_t last,
 			 c_data_deallocator_t cb);
 extern void vector_clear(vector_t v);

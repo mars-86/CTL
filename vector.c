@@ -374,8 +374,7 @@ int vector_erase(vector_t v, iterator_t first, iterator_t last)
 	struct iterator_internal *_first = (struct iterator_internal *)first;
 	struct iterator_internal *_last = (struct iterator_internal *)last;
 
-	if (_first->pos == (v)->_end.pos || _last->pos < _first->pos ||
-	    _last->pos == 0)
+	if (_first->pos == v->_end.pos || _last->pos < _first->pos)
 		return 0;
 
 #ifdef _DEBUG
@@ -389,9 +388,9 @@ int vector_erase(vector_t v, iterator_t first, iterator_t last)
 			c_it_advance((iterator_t)_first, (v->size));
 		}
 
-	if (v->_begin.pos == _first->pos) {
+	if (_first->pos == 0) {
 		memcpy(v->mem, _last->ptr + v->size,
-		       (v->_end.pos - _last->pos) * v->size);
+		       (v->_end.pos - _last->pos - 1) * v->size);
 	} else {
 		memcpy(v->mem, v->_begin.ptr, _first->pos * v->size);
 		memcpy(v->mem + (_first->pos * v->size), _last->ptr + v->size,
@@ -407,6 +406,11 @@ int vector_erase(vector_t v, iterator_t first, iterator_t last)
 
 int vector_erase_at(vector_t v, iterator_t position)
 {
+#ifdef __DEBUG
+	struct iterator_internal *_position =
+		(struct iterator_internal *)position;
+	printf("position %ld\n", _position->pos);
+#endif
 	return vector_erase(v, position, position);
 }
 
@@ -416,8 +420,7 @@ int vector_remove(vector_t v, iterator_t first, iterator_t last,
 	struct iterator_internal *_first = (struct iterator_internal *)first;
 	struct iterator_internal *_last = (struct iterator_internal *)last;
 
-	if (_first->pos == (v)->_end.pos || _last->pos < _first->pos ||
-	    _last->pos == 0)
+	if (_first->pos == (v)->_end.pos || _last->pos < _first->pos)
 		return 0;
 
 #ifdef _DEBUG
@@ -432,7 +435,7 @@ int vector_remove(vector_t v, iterator_t first, iterator_t last,
 
 	if (v->_begin.pos == _first->pos) {
 		memcpy(v->mem, _last->ptr + v->size,
-		       (v->_end.pos - _last->pos) * v->size);
+		       (v->_end.pos - _last->pos - 1) * v->size);
 	} else {
 		memcpy(v->mem, v->_begin.ptr, _first->pos * v->size);
 		memcpy(v->mem + (_first->pos * v->size), _last->ptr + v->size,
