@@ -38,6 +38,7 @@ static void test_vector_push_back(TestFixture *fixture, gconstpointer data)
 	printf("PTR: %d\n", *(int *)p);
 
 	vector_push_back_m(v, c_data_int32(-5), int);
+
 	g_assert_cmpint(vector_size(v), ==, 1);
 
 	printf("PTR: %d\n", *(int *)p);
@@ -346,6 +347,33 @@ static void test_vector_clear(TestFixture *fixture, gconstpointer data)
 	it_free(it2);
 }
 
+static void test_vector_reserve(TestFixture *fixture, gconstpointer data)
+{
+	vector_t v = fixture->v;
+	const int r_size = 9;
+	int i;
+
+	g_assert_cmpint(vector_capacity(v), ==, 1);
+
+	vector_push_back_m(v, c_data_int32(-5), int);
+
+	g_assert_cmpint(vector_capacity(v), ==, 2);
+
+	for (i = 0; i < 8; ++i)
+		vector_push_back_m(v, c_data_int32(i * 2), int);
+
+	g_assert_cmpint(vector_capacity(v), ==, 16);
+
+	vector_reserve(v, r_size);
+
+	g_assert_cmpint(vector_capacity(v), ==, vector_size(v) + r_size);
+
+	for (i = 0; i < 9; ++i)
+		vector_push_back_m(v, c_data_int32(i * 4), int);
+
+	g_assert_cmpint(vector_capacity(v), ==, 32);
+}
+
 int main(int argc, char **argv)
 {
 	int result;
@@ -359,6 +387,7 @@ int main(int argc, char **argv)
 	ADD_TEST(vector, erase, TestFixture, NULL);
 	ADD_TEST(vector, erase_at, TestFixture, NULL);
 	ADD_TEST(vector, clear, TestFixture, NULL);
+	ADD_TEST(vector, reserve, TestFixture, NULL);
 
 	/* Run the tests */
 	result = g_test_run();

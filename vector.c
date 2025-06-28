@@ -149,6 +149,8 @@ vector_t vector_alloc(const char *type, size_t size, size_t n, void **val,
 	if (!v)
 		return NULL;
 
+	vector_set_opts(v, options);
+
 	if (n > 0) {
 		newmem = malloc(n * size);
 		if (!newmem)
@@ -170,10 +172,8 @@ vector_t vector_alloc(const char *type, size_t size, size_t n, void **val,
 		if (!newmem)
 			return NULL;
 
-		init_vec_props(v, 1, 0, 0);
+		init_vec_props(v, (v->opts.chunck_size), 0, 0);
 	}
-
-	vector_set_opts(v, options);
 
 	v->mem = newmem;
 	v->size = size;
@@ -321,7 +321,12 @@ int vector_push_back(vector_t v, void *val, const char *type)
 		size_t new_cap = 0;
 
 		if (v->resized) {
-			while (new_cap < v->length) {
+			v->opts.factor = 1;
+			new_cap = 1;
+			while (new_cap < v->capacity) {
+#ifdef __DEBUG
+				printf("new cap: %ld\n", new_cap);
+#endif
 				new_cap = inc_size(v, new_cap);
 				v->opts.factor *= v->opts.gfactor;
 			}
@@ -517,6 +522,11 @@ void vector_reserve(vector_t v, size_t n)
 	c_mem_t newmem = NULL;
 	size_t new_size;
 
+#ifdef __DEBUG
+	printf("v length: %ld\n", v->length);
+	printf("v capacity: %ld\n", v->capacity);
+#endif
+
 	if (v->capacity < v->length + n) {
 		new_size = v->length + n;
 
@@ -529,7 +539,7 @@ void vector_reserve(vector_t v, size_t n)
 		free(v->mem);
 		v->mem = newmem;
 
-		set_iterators(v, v->mem, new_size);
+		set_iterators(v, v->mem, v->length);
 
 		v->capacity = new_size;
 		v->resized = 1;
